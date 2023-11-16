@@ -20,3 +20,5 @@ class User(AbstractUser):
         null=True,
         blank=True
     )
+    followers = models.ManyToManyField("self", related_name="following")
+
