@@ -19,6 +19,7 @@ from user.serializers import (
     UserChangePasswordSerializer,
     UserDetailSerializer,
     UserListSerializer,
+    UserPictureSerializer,
 )
 
 
@@ -29,7 +30,9 @@ class UserViewSet(
     UpdateModelMixin,
 ):
     serializer_class = UserListSerializer
-    permission_classes = [IsOwnerOrReadOnly,]
+    permission_classes = [
+        IsOwnerOrReadOnly,
+    ]
 
     def get_queryset(self):
         queryset = get_user_model().objects.all()
@@ -41,14 +44,22 @@ class UserViewSet(
         return queryset
 
     def get_serializer_class(self):
-        if self.action in ["update", "partial_update", "my_profile"]:
+        if self.action in ["update", "partial_update"] or (
+            self.action == "my_profile"
+            and self.request.method in ["PUT", "PATCH"]
+        ):
             return UserUpdateSerializer
 
-        if self.action in ["retrieve"]:
+        if self.action == "retrieve" or (
+            self.action == "my_profile" and self.request.method == "GET"
+        ):
             return UserDetailSerializer
 
         if self.action == "change_password":
             return UserChangePasswordSerializer
+
+        if self.action == "upload_avatar":
+            return UserPictureSerializer
 
         return UserListSerializer
 
@@ -58,19 +69,29 @@ class UserViewSet(
         url_path="me",
     )
     def my_profile(self, request):
-        serializer = self.get_serializer(
-            request.user, data=request.data, partial=True
-        )
+        if request.method in ["PUT", "PATCH"]:
+            serializer = self.get_serializer(
+                request.user, data=request.data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        if request.method == "GET":
+            serializer = self.get_serializer(request.user)
+
+        return Response(serializer.data)
+
+    @action(methods=["POST"], detail=False, url_path="me-upload-avatar")
+    def upload_avatar(self, request):
+        serializer = self.get_serializer(request.user, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        if request.method == "GET":
-            serializer = UserDetailSerializer(request.user)
         return Response(serializer.data)
 
     @action(
         methods=["POST"],
         detail=False,
-        url_path="change_password",
+        url_path="change-password",
     )
     def change_password(self, request):
         serializer = self.get_serializer(data=request.data)
