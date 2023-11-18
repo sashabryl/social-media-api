@@ -1,14 +1,16 @@
 from django.contrib.auth import get_user_model
-from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import viewsets, status, generics
+from rest_framework.mixins import (ListModelMixin, RetrieveModelMixin, UpdateModelMixin)
 
 from user.serializers import UserSerializer
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(
+    viewsets.GenericViewSet,
+    ListModelMixin,
+    RetrieveModelMixin,
+    UpdateModelMixin
+):
     serializer_class = UserSerializer
 
     def get_queryset(self):
@@ -19,3 +21,9 @@ class UserViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(username__icontains=username)
 
         return queryset
+
+
+class CreateUserView(generics.CreateAPIView):
+    serializer_class = UserSerializer
+
+
