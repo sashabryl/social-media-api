@@ -1,28 +1,87 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
+from rest_framework.exceptions import ValidationError
+from django.core import exceptions
 
 
 class UserSerializer(serializers.ModelSerializer):
+    password_confirm = serializers.CharField(
+        write_only=True, style={"input_type": "password"}
+    )
+
     class Meta:
         model = get_user_model()
         fields = (
             "id",
+            "email",
             "first_name",
             "last_name",
-            "email",
             "password",
-            "bio",
+            "password_confirm",
         )
         extra_kwargs = {
-            "password": {"write_only": True, "min_length": 8},
-            "first_name": {"required": False},
-            "last_name": {"required": False},
-            "bio": {"required": False},
+            "password": {
+                "write_only": True,
+                "style": {"input_type": "password"},
+            },
+            "first_name": {
+                "required": False,
+                "style": {"placeholder": "optional"},
+            },
+            "last_name": {
+                "required": False,
+                "style": {"placeholder": "optional"},
+            },
         }
+
+    @staticmethod
+    def validate_password(value):
+        try:
+            validate_password(value)
+        except exceptions.ValidationError as exc:
+            raise serializers.ValidationError(str(exc))
+        return value
+
+    def validate(self, data):
+        if data.get("password") != data.pop("password_confirm"):
+            raise ValidationError(
+                "Passwords do not match. Make sure you enter the same passwords"
+            )
+        return super().validate(data)
 
     def create(self, validated_data):
         return get_user_model().objects.create_user(**validated_data)
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    followers = serializers.StringRelatedField(many=True)
+    following = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "id",
+            "picture",
+            "first_name",
+            "last_name",
+            "email",
+            "bio",
+            "followers",
+            "following",
+        )
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "first_name", "last_name", "email", "picture")
+
+
+class UserPictureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "picture")
 
 
 class UserUpdateSerializer(UserSerializer):
@@ -43,36 +102,32 @@ class UserUpdateSerializer(UserSerializer):
 
 
 class UserChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True, max_length=30)
-    password = serializers.CharField(required=True, max_length=30)
+    old_password = serializers.CharField(
+        required=True,
+        max_length=255,
+        style={
+            "input_type": "password",
+            "placeholder": "Your old password password",
+        },
+    )
+    password = serializers.CharField(
+        required=True,
+        max_length=255,
+        style={"input_type": "password", "placeholder": "New password"},
+    )
     confirmed_password = serializers.CharField(
-        required=True, max_length=30
+        required=True,
+        max_length=255,
+        style={"input_type": "password", "placeholder": "Repeat"},
     )
 
     def validate(self, data):
-        if not self.context["request"].user.check_password(
-            data.get("old_password")
-        ):
-            raise serializers.ValidationError(
-                {"old_password": "Wrong password."}
+        if not data.get("password") == data.get("confirmed_password"):
+            raise ValidationError(
+                "Confirm your new password carefully (they don't match)"
             )
-
-        if data.get("confirmed_password") != data.get("password"):
-            raise serializers.ValidationError(
-                {"password": "Password must be confirmed correctly."}
-            )
-
-        return data
-
-    def update(self, instance, validated_data):
-        validate_password(validated_data.get("password"))
-        instance.set_password(validated_data.get("password"))
-        instance.save()
-        return instance
-
-    def create(self, validated_data):
-        pass
-
-    @property
-    def data(self):
-        return {"Success": True}
+        try:
+            validate_password(data.get("password"))
+        except exceptions.ValidationError as exc:
+            raise serializers.ValidationError(str(exc))
+        return super().validate(data)
