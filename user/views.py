@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from user.permissions import IsOwnerOrReadOnly
 from user.serializers import (
     UserSerializer,
     UserUpdateSerializer,
@@ -27,7 +28,8 @@ class UserViewSet(
     RetrieveModelMixin,
     UpdateModelMixin,
 ):
-    serializer_class = UserSerializer
+    serializer_class = UserListSerializer
+    permission_classes = [IsOwnerOrReadOnly,]
 
     def get_queryset(self):
         queryset = get_user_model().objects.all()
@@ -50,7 +52,11 @@ class UserViewSet(
 
         return UserListSerializer
 
-    @action(methods=["GET", "PUT", "PATCH"], detail=False, url_path="me")
+    @action(
+        methods=["GET", "PUT", "PATCH"],
+        detail=False,
+        url_path="me",
+    )
     def my_profile(self, request):
         serializer = self.get_serializer(
             request.user, data=request.data, partial=True
@@ -61,7 +67,11 @@ class UserViewSet(
             serializer = UserDetailSerializer(request.user)
         return Response(serializer.data)
 
-    @action(methods=["POST"], detail=False, url_path="change_password")
+    @action(
+        methods=["POST"],
+        detail=False,
+        url_path="change_password",
+    )
     def change_password(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
