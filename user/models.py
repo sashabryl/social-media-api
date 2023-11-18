@@ -55,9 +55,7 @@ class User(AbstractUser):
         upload_to=user_picture_file_path, null=True, blank=True
     )
     followers = models.ManyToManyField(
-        "self",
-        symmetrical=False,
-        related_name="following"
+        "self", symmetrical=False, related_name="following"
     )
     username = None
     email = models.EmailField(_("email address"), unique=True)
