@@ -1,9 +1,11 @@
 import os
 import uuid
 
+from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import UniqueConstraint
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
@@ -54,9 +56,6 @@ class User(AbstractUser):
     picture = models.ImageField(
         upload_to=user_picture_file_path, null=True, blank=True
     )
-    followers = models.ManyToManyField(
-        "self", symmetrical=False, related_name="following"
-    )
     username = None
     email = models.EmailField(_("email address"), unique=True)
 
@@ -64,3 +63,32 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="following",
+    )
+    followed = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="followers",
+    )
+
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=("follower", "followed"),
+                name="unique_follower_followed",
+            )
+        ]
+
+    @property
+    def follower_email(self) -> str:
+        return self.follower.email
+
+    @property
+    def followed_email(self) -> str:
+        return self.followed.email

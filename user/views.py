@@ -12,7 +12,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from user.permissions import IsOwnerOrReadOnly
+from user.models import Follow
+from user.permissions import IsOwnerOrReadOnly, IsNotOwner
 from user.serializers import (
     UserSerializer,
     UserUpdateSerializer,
@@ -20,6 +21,7 @@ from user.serializers import (
     UserDetailSerializer,
     UserListSerializer,
     UserPictureSerializer,
+    FollowSerializer,
 )
 
 
@@ -50,7 +52,7 @@ class UserViewSet(
         ):
             return UserUpdateSerializer
 
-        if self.action == "retrieve" or (
+        if self.action in ["retrieve"] or (
             self.action == "my_profile" and self.request.method == "GET"
         ):
             return UserDetailSerializer
@@ -61,7 +63,11 @@ class UserViewSet(
         if self.action == "upload_avatar":
             return UserPictureSerializer
 
-        return UserListSerializer
+        if self.action == "list":
+            return UserListSerializer
+
+        if self.action == "follow":
+            return FollowSerializer
 
     @action(
         methods=["GET", "PUT", "PATCH"],
@@ -87,6 +93,24 @@ class UserViewSet(
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="follow",
+        permission_classes=[
+            IsAuthenticated,
+        ],
+    )
+    def follow(self, request, pk=None):
+        follower = request.user
+        followed = self.get_object()
+        serializer = self.get_serializer(
+            data={"follower": follower.id, "followed": followed.id}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"detail": f"Now you follow {followed.email}!"})
 
     @action(
         methods=["POST"],

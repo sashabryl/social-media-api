@@ -1,8 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
 from django.core import exceptions
+
+from user.models import Follow
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -55,8 +58,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
-    followers = serializers.StringRelatedField(many=True)
-    following = serializers.StringRelatedField(many=True)
+    followers = serializers.SlugRelatedField(
+        slug_field="follower_email", many=True, read_only=True
+    )
+    following = serializers.SlugRelatedField(
+        slug_field="followed_email", many=True, read_only=True
+    )
 
     class Meta:
         model = get_user_model()
@@ -70,6 +77,19 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "followers",
             "following",
         )
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Follow
+        fields = ("id", "follower", "followed")
+
+    def validate(self, data):
+        follower = data.get("follower")
+        followed = data.get("followed")
+        if Follow.objects.filter(followed=followed, follower=follower).exists():
+            raise ValidationError(f"You already follow {followed.email}")
+        return super().validate(data)
 
 
 class UserListSerializer(serializers.ModelSerializer):
