@@ -16,9 +16,6 @@ def user_picture_file_path(instance, filename) -> str:
 class User(AbstractUser):
     bio = models.TextField()
     picture = models.ImageField(
-        upload_to=user_picture_file_path,
-        null=True,
-        blank=True
+        upload_to=user_picture_file_path, null=True, blank=True
     )
     followers = models.ManyToManyField("self", related_name="following")
-
