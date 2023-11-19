@@ -114,17 +114,26 @@ class UserViewSet(
     def follow_unfollow(self, request, pk=None):
         follower = request.user
         followed = self.get_object()
-        follow, created = Follow.objects.get_or_create(follower=follower, followed=followed)
+        follow, created = Follow.objects.get_or_create(
+            follower=follower, followed=followed
+        )
         if created:
             return Response({"detail": f"Now you follow {followed.email}!"})
         follow.delete()
         return Response({"detail": f"Now you don't follow {followed.email}"})
 
-    @action(methods=["GET"], detail=True, url_path="is-followed", permission_classes=[IsNotOwner])
+    @action(
+        methods=["GET"],
+        detail=True,
+        url_path="is-followed",
+        permission_classes=[IsNotOwner],
+    )
     def is_followed(self, request, pk=None):
         follower = request.user
         followed = self.get_object()
-        is_followed = Follow.objects.filter(followed=followed, follower=follower).exists()
+        is_followed = Follow.objects.filter(
+            followed=followed, follower=follower
+        ).exists()
         return Response({"detail": {"is_followed": is_followed}})
 
     @action(

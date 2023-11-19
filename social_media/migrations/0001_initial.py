@@ -28,7 +28,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "image",
-                    models.ImageField(upload_to=social_media.models.image_file_path),
+                    models.ImageField(
+                        upload_to=social_media.models.image_file_path
+                    ),
                 ),
             ],
         ),

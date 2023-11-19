@@ -64,6 +64,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
     following = serializers.SlugRelatedField(
         slug_field="followed_email", many=True, read_only=True
     )
+
     class Meta:
         model = get_user_model()
         fields = (

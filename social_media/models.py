@@ -20,17 +20,17 @@ class Image(models.Model):
         on_delete=models.CASCADE,
         related_name="images",
         blank=True,
-        null=True
+        null=True,
     )
 
 
 class Post(models.Model):
     title = models.CharField(max_length=255)
-    content = models.TextField(null=True, blank=True)
+    contend = models.TextField(null=True, blank=True)
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="posts"
+        related_name="posts",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -42,12 +42,10 @@ class Like(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="likes"
+        related_name="likes",
     )
     post = models.ForeignKey(
-        "Post",
-        on_delete=models.CASCADE,
-        related_name="likes"
+        "Post", on_delete=models.CASCADE, related_name="likes"
     )
 
     class Meta:
@@ -60,11 +58,10 @@ class Comment(models.Model):
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="comments"
+        related_name="comments",
     )
     contend = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
-
