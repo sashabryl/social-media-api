@@ -8,19 +8,25 @@ from django.db.models import UniqueConstraint
 
 def image_file_path(instance, filename):
     _, extension = os.path.splitext(filename)
-    filename = f"{instance.id}-{uuid.uuid4()}{extension}"
+    filename = f"{instance.post}-{uuid.uuid4()}{extension}"
 
     return os.path.join("uploads/images", filename)
 
 
 class Image(models.Model):
     image = models.ImageField(upload_to=image_file_path)
+    post = models.ForeignKey(
+        "Post",
+        on_delete=models.CASCADE,
+        related_name="images",
+        blank=True,
+        null=True
+    )
 
 
 class Post(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField(null=True, blank=True)
-    images = models.ManyToManyField(Image, related_name="images")
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
