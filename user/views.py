@@ -37,9 +37,17 @@ class UserViewSet(
         queryset = get_user_model().objects.all()
 
         email = self.request.query_params.get("email")
+        first_name = self.request.query_params.get("first_name")
+        last_name = self.request.query_params.get("last_name")
 
         if email:
             queryset = queryset.filter(email__icontains=email)
+
+        if first_name:
+            queryset = queryset.filter(first_name__icontains=first_name)
+
+        if last_name:
+            queryset = queryset.filter(last_name__icontains=last_name)
 
         if self.action in ["retrieve", "is_followed", "my_profile"]:
             queryset = queryset.prefetch_related(
