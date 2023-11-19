@@ -64,7 +64,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
     following = serializers.SlugRelatedField(
         slug_field="followed_email", many=True, read_only=True
     )
-
     class Meta:
         model = get_user_model()
         fields = (
@@ -77,19 +76,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "followers",
             "following",
         )
-
-
-class FollowSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Follow
-        fields = ("id", "follower", "followed")
-
-    def validate(self, data):
-        follower = data.get("follower")
-        followed = data.get("followed")
-        if Follow.objects.filter(followed=followed, follower=follower).exists():
-            raise ValidationError(f"You already follow {followed.email}")
-        return super().validate(data)
 
 
 class UserListSerializer(serializers.ModelSerializer):

@@ -15,4 +15,4 @@ class IsOwnerOrReadOnly(BasePermission):
 
 class IsNotOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
-        return bool(obj != request.user)
+        return bool(obj != request.user and request.user.is_authenticated)

@@ -7,10 +7,8 @@ from rest_framework.mixins import (
     RetrieveModelMixin,
     UpdateModelMixin,
 )
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
+
 
 from user.models import Follow
 from user.permissions import IsOwnerOrReadOnly, IsNotOwner
@@ -21,7 +19,6 @@ from user.serializers import (
     UserDetailSerializer,
     UserListSerializer,
     UserPictureSerializer,
-    FollowSerializer,
 )
 
 
@@ -39,9 +36,16 @@ class UserViewSet(
     def get_queryset(self):
         queryset = get_user_model().objects.all()
 
-        username = self.request.query_params.get("username")
-        if username:
-            queryset = queryset.filter(username__icontains=username)
+        email = self.request.query_params.get("email")
+
+        if email:
+            queryset = queryset.filter(email__icontains=email)
+
+        if self.action in ["retrieve", "is_followed", "my_profile"]:
+            queryset = queryset.prefetch_related(
+                "followers__follower",
+                "following__followed",
+            )
 
         return queryset
 
@@ -52,7 +56,7 @@ class UserViewSet(
         ):
             return UserUpdateSerializer
 
-        if self.action in ["retrieve"] or (
+        if self.action == "retrieve" or (
             self.action == "my_profile" and self.request.method == "GET"
         ):
             return UserDetailSerializer
@@ -65,9 +69,6 @@ class UserViewSet(
 
         if self.action == "list":
             return UserListSerializer
-
-        if self.action == "follow":
-            return FollowSerializer
 
     @action(
         methods=["GET", "PUT", "PATCH"],
@@ -97,20 +98,26 @@ class UserViewSet(
     @action(
         detail=True,
         methods=["get"],
-        url_path="follow",
+        url_path="follow-unfollow",
         permission_classes=[
-            IsAuthenticated,
+            IsNotOwner,
         ],
     )
-    def follow(self, request, pk=None):
+    def follow_unfollow(self, request, pk=None):
         follower = request.user
         followed = self.get_object()
-        serializer = self.get_serializer(
-            data={"follower": follower.id, "followed": followed.id}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"detail": f"Now you follow {followed.email}!"})
+        follow, created = Follow.objects.get_or_create(follower=follower, followed=followed)
+        if created:
+            return Response({"detail": f"Now you follow {followed.email}!"})
+        follow.delete()
+        return Response({"detail": f"Now you don't follow {followed.email}"})
+
+    @action(methods=["GET"], detail=True, url_path="is-followed", permission_classes=[IsNotOwner])
+    def is_followed(self, request, pk=None):
+        follower = request.user
+        followed = self.get_object()
+        is_followed = Follow.objects.filter(followed=followed, follower=follower).exists()
+        return Response({"detail": {"is_followed": is_followed}})
 
     @action(
         methods=["POST"],
