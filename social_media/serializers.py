@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from social_media.models import Image, Post
+from social_media.models import Image, Post, Like
 
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -18,7 +18,8 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ("author", "title", "contend", "images", "upload_images")
+        fields = ("author", "title", "contend", "images", "upload_images", "created_at")
+        read_only_fields = ("id", "images", "created_at")
 
     def create(self, validated_data):
         images_data = validated_data.pop("upload_images", [])
@@ -29,8 +30,21 @@ class PostSerializer(serializers.ModelSerializer):
 
         return post
 
+    def update(self, instance, validated_data):
+        pass
 
-class PostListSerializer(serializers.ModelSerializer):
+
+class PostUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ("id", "title", "author", "created_at")
+        fields = ("contend",)
+
+
+class PostListSerializer(serializers.ModelSerializer):
+    likes_number = serializers.IntegerField()
+    author = serializers.StringRelatedField()
+
+    class Meta:
+        model = Post
+        fields = ("id", "title", "author", "created_at", "likes_number")
+
