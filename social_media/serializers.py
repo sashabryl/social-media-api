@@ -15,10 +15,12 @@ class PostSerializer(serializers.ModelSerializer):
         child=serializers.ImageField(max_length=100000000, allow_empty_file=False, use_url=False),
         write_only=True, required=False
     )
+    author = serializers.StringRelatedField()
+    likes_number = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Post
-        fields = ("author", "title", "contend", "images", "upload_images", "created_at")
+        fields = ("author", "title", "contend", "images", "likes_number", "upload_images", "created_at")
         read_only_fields = ("id", "images", "created_at")
 
     def create(self, validated_data):

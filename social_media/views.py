@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from social_media.models import Post, Image, Like
-from social_media.permissions import IsOwnerOrIsAuthenticatedReadAndCreateOrReadOnly
+from social_media.permissions import IsOwnerOrReadCreateOrReadOnly
 from social_media.serializers import (
     PostSerializer,
     PostListSerializer, PostUpdateSerializer,
@@ -14,7 +14,7 @@ from social_media.serializers import (
 
 
 class PostViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsOwnerOrIsAuthenticatedReadAndCreateOrReadOnly,]
+    permission_classes = [IsOwnerOrReadCreateOrReadOnly]
     parser_classes = [MultiPartParser]
 
     def get_serializer_class(self):
@@ -36,9 +36,14 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
         if self.action == "retrieve":
-            queryset = queryset.prefetch_related("images")
+            queryset = queryset.prefetch_related("images", "likes").annotate(
+                likes_number=Count("likes")
+            )
 
         return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
     @action(methods=["get"], detail=True, url_path="like-dislike", permission_classes=[IsAuthenticated])
     def like_dislike(self, request, pk=None):
@@ -51,11 +56,11 @@ class PostViewSet(viewsets.ModelViewSet):
             like.delete()
             return Response({"detail": f"You have successfully stopped liking {post}"})
 
-    @action(methods=["get"], detail=True, url_path="like-dislike", permission_classes=[IsAuthenticated])
+    @action(methods=["get"], detail=True, url_path="is-liked", permission_classes=[IsAuthenticated])
     def is_liked(self, request, pk=None):
         user = request.user
         post = self.get_object()
         if Like.objects.filter(user=user, post=post).exists():
             return Response({"is_liked": True})
-        return Response({"is_liked": True})
+        return Response({"is_liked": False})
 

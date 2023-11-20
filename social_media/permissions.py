@@ -1,14 +1,13 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS, IsAuthenticated
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class IsOwnerOrIsAuthenticatedReadAndCreateOrReadOnly(BasePermission):
+class IsOwnerOrReadCreateOrReadOnly(BasePermission):
     def has_object_permission(self, request, view, obj):
-        is_owner = bool(request.user == obj.author)
-        is_auth_or_read_only = bool(
+        return bool(
+            request.method in SAFE_METHODS or
+            (request.user.is_authenticated and request.method == "POST") or
             (
-                request.user and
-                request.user.is_authenticated and
-                request.method in SAFE_METHODS + ["POST"]
-            ) or request.method in SAFE_METHODS
+                request.method in ["DELETE", "PUT", "PATCH"] and
+                obj.author.id == request.user.id
+            )
         )
-        return bool(is_owner or is_auth_or_read_only)

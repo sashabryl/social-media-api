@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -32,22 +33,15 @@ class UserViewSet(
     permission_classes = [
         IsOwnerOrReadOnly,
     ]
+    filter_backends = [DjangoFilterBackend,]
+    filterset_fields = {
+        "email": ["icontains"],
+        "first_name": ["icontains"],
+        "last_name": ["icontains"],
+    }
 
     def get_queryset(self):
         queryset = get_user_model().objects.all()
-
-        email = self.request.query_params.get("email")
-        first_name = self.request.query_params.get("first_name")
-        last_name = self.request.query_params.get("last_name")
-
-        if email:
-            queryset = queryset.filter(email__icontains=email)
-
-        if first_name:
-            queryset = queryset.filter(first_name__icontains=first_name)
-
-        if last_name:
-            queryset = queryset.filter(last_name__icontains=last_name)
 
         if self.action in ["retrieve", "is_followed", "my_profile"]:
             queryset = queryset.prefetch_related(
