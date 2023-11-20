@@ -39,6 +39,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="post",
             name="tags",
-            field=models.ManyToManyField(related_name="posts", to="social_media.tag"),
+            field=models.ManyToManyField(
+                related_name="posts", to="social_media.tag"
+            ),
         ),
     ]

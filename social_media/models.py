@@ -32,7 +32,7 @@ class Post(models.Model):
         on_delete=models.CASCADE,
         related_name="posts",
     )
-    tags = models.ManyToManyField("Tag", related_name="posts")
+    tags = models.ManyToManyField("Tag", blank=True, null=True, related_name="posts")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -61,7 +61,9 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name="comments",
     )
-    post = models.ForeignKey("Post", on_delete=models.CASCADE, related_name="comments")
+    post = models.ForeignKey(
+        "Post", on_delete=models.CASCADE, related_name="comments"
+    )
     contend = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -71,3 +73,9 @@ class Comment(models.Model):
 
 class Tag(models.Model):
     name = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
