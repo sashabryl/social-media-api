@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -53,6 +54,7 @@ class UserViewSet(
             queryset = queryset.prefetch_related(
                 "followers__follower",
                 "following__followed",
+                "posts__images"
             )
 
         return queryset

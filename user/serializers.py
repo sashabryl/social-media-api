@@ -5,6 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
 from django.core import exceptions
 
+from social_media.serializers import PostListSerializer, PostProfileListSerializer
 from user.models import Follow
 
 
@@ -64,6 +65,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
     following = serializers.SlugRelatedField(
         slug_field="followed_email", many=True, read_only=True
     )
+    posts = PostProfileListSerializer(many=True, read_only=True)
 
     class Meta:
         model = get_user_model()
@@ -76,6 +78,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "bio",
             "followers",
             "following",
+            "posts",
         )
 
 

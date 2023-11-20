@@ -115,4 +115,8 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ("id", "name")
 
 
+class PostProfileListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ("id", "title", "images", "created_at")
 
