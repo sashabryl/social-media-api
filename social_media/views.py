@@ -1,5 +1,5 @@
 from django.db.models import Count, Q
-from rest_framework import viewsets, generics
+from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +10,7 @@ from social_media.permissions import IsOwnerOrReadCreateOrReadOnly
 from social_media.serializers import (
     PostListSerializer,
     PostUpdateSerializer,
-    TagSerializer, PostCreateSerializer, PostDetailSerializer,
+    TagSerializer, PostCreateSerializer, PostDetailSerializer, CommentCreateSerializer,
 )
 
 
@@ -30,6 +30,9 @@ class PostViewSet(viewsets.ModelViewSet):
 
         if self.action == "retrieve":
             return PostDetailSerializer
+
+        if self.action == "add_comment":
+            return CommentCreateSerializer
 
     def get_queryset(self):
         """Filter by case-insensitive title or list of case-insensitive names of tags"""
@@ -51,11 +54,11 @@ class PostViewSet(viewsets.ModelViewSet):
 
         if self.action == "list":
             queryset = queryset.select_related("author").prefetch_related("tags").annotate(
-                likes_number=Count("likes")
+                likes_number=Count("likes"), comments_number=Count("comments")
             )
 
         if self.action == "retrieve":
-            queryset = queryset.prefetch_related("images", "tags").annotate(
+            queryset = queryset.prefetch_related("images", "tags", "comments__author").annotate(
                 likes_number=Count("likes")
             )
 
@@ -94,6 +97,15 @@ class PostViewSet(viewsets.ModelViewSet):
         if Like.objects.filter(user=user, post=post).exists():
             return Response({"is_liked": True})
         return Response({"is_liked": False})
+
+    @action(methods=["POST"], detail=True, url_path="add-comment", permission_classes=[IsAuthenticated])
+    def add_comment(self, request, pk=None):
+        author = request.user
+        post = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(post=post, author=author)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class TagCreateView(generics.CreateAPIView):

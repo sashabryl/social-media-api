@@ -1,6 +1,20 @@
 from rest_framework import serializers
 
-from social_media.models import Image, Post, Like, Tag
+from social_media.models import Image, Post, Like, Tag, Comment
+
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ("id", "contend")
+
+
+class CommentListSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField()
+
+    class Meta:
+        model = Comment
+        fields = ("author", "contend", "created_at")
 
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -47,6 +61,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     tags = serializers.StringRelatedField(many=True)
     images = ImageSerializer(many=True)
     author = serializers.StringRelatedField()
+    comments = CommentListSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
@@ -58,6 +73,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "images",
             "contend",
             "tags",
+            "comments",
             "created_at"
         )
 
@@ -76,6 +92,7 @@ class PostUpdateSerializer(serializers.ModelSerializer):
 
 class PostListSerializer(serializers.ModelSerializer):
     likes_number = serializers.IntegerField()
+    comments_number = serializers.IntegerField()
     author = serializers.StringRelatedField()
     tags = serializers.StringRelatedField(many=True)
 
@@ -87,6 +104,7 @@ class PostListSerializer(serializers.ModelSerializer):
             "author",
             "tags",
             "created_at",
+            "comments_number",
             "likes_number",
         )
 
@@ -95,3 +113,6 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ("id", "name")
+
+
+
