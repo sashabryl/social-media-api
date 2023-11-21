@@ -1,4 +1,5 @@
 from django.db.models import Count, Q
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
@@ -15,7 +16,6 @@ from social_media.serializers import (
     PostDetailSerializer,
     CommentCreateSerializer,
 )
-from social_media.tasks import create_scheduled_post
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -39,8 +39,6 @@ class PostViewSet(viewsets.ModelViewSet):
             return CommentCreateSerializer
 
     def get_queryset(self):
-        """Filter by case-insensitive title or list of case-insensitive names of tags"""
-
         queryset = Post.objects.all()
 
         title = self.request.query_params.get("title")
@@ -83,6 +81,7 @@ class PostViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def like_dislike(self, request, pk=None):
+        """Creates a Like instance if there isn't one and deletes it otherwise"""
         user = request.user
         post = self.get_object()
         like, created = Like.objects.get_or_create(user=user, post=post)
@@ -101,12 +100,17 @@ class PostViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def is_liked(self, request, pk=None):
+        """Checks if the client likes the post"""
         user = request.user
         post = self.get_object()
         if Like.objects.filter(user=user, post=post).exists():
             return Response({"is_liked": True})
         return Response({"is_liked": False})
 
+    @extend_schema(
+        request=CommentCreateSerializer,
+        methods=["POSt"]
+    )
     @action(
         methods=["POST"],
         detail=True,
@@ -120,6 +124,25 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(post=post, author=author)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="title",
+                description="Filter by case-insensitive title (ex. ?title=islam as cultural catalyst)",
+                required=False,
+                type=str
+            ),
+            OpenApiParameter(
+                name="tags",
+                description="Filter by a list or case-insensitive tags (ex. ?tags=barby,fishing)",
+                required=False,
+                type={"list": {"items": {"type": "str"}}}
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 class TagCreateView(generics.CreateAPIView):
