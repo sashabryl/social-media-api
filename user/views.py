@@ -8,6 +8,7 @@ from rest_framework.mixins import (
     RetrieveModelMixin,
     UpdateModelMixin,
 )
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 
@@ -78,14 +79,12 @@ class UserViewSet(
         if self.action == "list":
             return UserListSerializer
 
-    @extend_schema(
-        request=UserDetailSerializer,
-        methods=["POST"]
-    )
+    @extend_schema(request=UserDetailSerializer, methods=["POST"])
     @action(
         methods=["GET", "PUT", "PATCH"],
         detail=False,
         url_path="me",
+        permission_classes=[IsAuthenticated],
     )
     def my_profile(self, request):
         """Returns the client's detail page with ability to update it"""
@@ -101,10 +100,7 @@ class UserViewSet(
 
         return Response(serializer.data)
 
-    @extend_schema(
-        request=UserPictureSerializer,
-        methods=["POST"]
-    )
+    @extend_schema(request=UserPictureSerializer, methods=["POST"])
     @action(methods=["POST"], detail=False, url_path="me-upload-avatar")
     def upload_avatar(self, request):
         """Uploads or changes the client's avatar"""
@@ -152,10 +148,7 @@ class UserViewSet(
         ).exists()
         return Response({"detail": {"is_followed": is_followed}})
 
-    @extend_schema(
-        request=UserChangePasswordSerializer,
-        methods=["POST"]
-    )
+    @extend_schema(request=UserChangePasswordSerializer, methods=["POST"])
     @action(
         methods=["POST"],
         detail=False,
@@ -183,19 +176,19 @@ class UserViewSet(
                 name="email",
                 description="Filter by case-insensitive email (ex. ?email=sasha)",
                 required=False,
-                type=str
+                type=str,
             ),
             OpenApiParameter(
                 name="first_name",
                 description="Filter by case-insensitive first_name (ex. ?first_name=sasha)",
                 required=False,
-                type=str
+                type=str,
             ),
             OpenApiParameter(
                 name="last_name",
                 description="Filter by case-insensitive last_name (ex. ?last_name=sasha)",
                 required=False,
-                type=str
+                type=str,
             ),
         ]
     )

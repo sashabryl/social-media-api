@@ -24,3 +24,21 @@ services:
             - "5433:5432"
         env_file:
             - .env
+
+    redis:
+        image: redis:alpine
+
+    celery:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        volumes:
+            - .:/app
+        command: celery -A social_media_api worker -l info
+        depends_on:
+            - db
+            - redis
+            - app
+        restart: on-failure
+        env_file:
+            - .env

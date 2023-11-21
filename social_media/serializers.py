@@ -1,7 +1,16 @@
-from rest_framework import serializers
+import datetime
 
-from social_media.models import Image, Post, Like, Tag, Comment
+from django.conf import settings
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+
+from social_media.models import Image, Post, Tag, Comment
 from social_media.tasks import create_scheduled_post
+
+import pytz
+
+
+TIME_ZONE = pytz.timezone(settings.TIME_ZONE)
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
@@ -47,13 +56,18 @@ class PostCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         scheduled_time = validated_data.pop("scheduled_time", None)
         if scheduled_time:
+            if scheduled_time < datetime.datetime.now(tz=TIME_ZONE):
+                raise ValidationError(
+                    "Scheduled time unfortunately can't be in the past..."
+                )
             author_id = validated_data.get("author").id
             title = validated_data.get("title")
             contend = validated_data.get("contend")
             tags = validated_data.get("tags")
             images_data = validated_data.get("upload_images")
-            create_scheduled_post.delay(
-                author_id, title, contend, tags, images_data
+            create_scheduled_post.apply_async(
+                args=[author_id, title, contend, tags, images_data],
+                eta=scheduled_time,
             )
             return validated_data
         images_data = validated_data.pop("upload_images", [])

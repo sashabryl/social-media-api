@@ -107,10 +107,7 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response({"is_liked": True})
         return Response({"is_liked": False})
 
-    @extend_schema(
-        request=CommentCreateSerializer,
-        methods=["POSt"]
-    )
+    @extend_schema(request=CommentCreateSerializer, methods=["POSt"])
     @action(
         methods=["POST"],
         detail=True,
@@ -131,13 +128,13 @@ class PostViewSet(viewsets.ModelViewSet):
                 name="title",
                 description="Filter by case-insensitive title (ex. ?title=islam as cultural catalyst)",
                 required=False,
-                type=str
+                type=str,
             ),
             OpenApiParameter(
                 name="tags",
                 description="Filter by a list or case-insensitive tags (ex. ?tags=barby,fishing)",
                 required=False,
-                type={"list": {"items": {"type": "str"}}}
+                type={"list": {"items": {"type": "str"}}},
             ),
         ]
     )
