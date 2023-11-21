@@ -52,9 +52,7 @@ class UserViewSet(
 
         if self.action in ["retrieve", "is_followed", "my_profile"]:
             queryset = queryset.prefetch_related(
-                "followers__follower",
-                "following__followed",
-                "posts__images"
+                "followers__follower", "following__followed", "posts__images"
             )
 
         return queryset

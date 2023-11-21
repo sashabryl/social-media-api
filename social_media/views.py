@@ -10,8 +10,12 @@ from social_media.permissions import IsOwnerOrReadCreateOrReadOnly
 from social_media.serializers import (
     PostListSerializer,
     PostUpdateSerializer,
-    TagSerializer, PostCreateSerializer, PostDetailSerializer, CommentCreateSerializer,
+    TagSerializer,
+    PostCreateSerializer,
+    PostDetailSerializer,
+    CommentCreateSerializer,
 )
+from social_media.tasks import create_scheduled_post
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -53,14 +57,19 @@ class PostViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(tag_filters)
 
         if self.action == "list":
-            queryset = queryset.select_related("author").prefetch_related("tags").annotate(
-                likes_number=Count("likes"), comments_number=Count("comments")
+            queryset = (
+                queryset.select_related("author")
+                .prefetch_related("tags")
+                .annotate(
+                    likes_number=Count("likes"),
+                    comments_number=Count("comments"),
+                )
             )
 
         if self.action == "retrieve":
-            queryset = queryset.prefetch_related("images", "tags", "comments__author").annotate(
-                likes_number=Count("likes")
-            )
+            queryset = queryset.prefetch_related(
+                "images", "tags", "comments__author"
+            ).annotate(likes_number=Count("likes"))
 
         return queryset
 
@@ -98,7 +107,12 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response({"is_liked": True})
         return Response({"is_liked": False})
 
-    @action(methods=["POST"], detail=True, url_path="add-comment", permission_classes=[IsAuthenticated])
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="add-comment",
+        permission_classes=[IsAuthenticated],
+    )
     def add_comment(self, request, pk=None):
         author = request.user
         post = self.get_object()

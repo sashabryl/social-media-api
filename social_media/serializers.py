@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from social_media.models import Image, Post, Like, Tag, Comment
+from social_media.tasks import create_scheduled_post
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
@@ -31,6 +32,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False,
     )
+    scheduled_time = serializers.DateTimeField(write_only=True, default=None)
 
     class Meta:
         model = Post
@@ -39,9 +41,21 @@ class PostCreateSerializer(serializers.ModelSerializer):
             "contend",
             "tags",
             "upload_images",
+            "scheduled_time",
         )
 
     def create(self, validated_data):
+        scheduled_time = validated_data.pop("scheduled_time", None)
+        if scheduled_time:
+            author_id = validated_data.get("author").id
+            title = validated_data.get("title")
+            contend = validated_data.get("contend")
+            tags = validated_data.get("tags")
+            images_data = validated_data.get("upload_images")
+            create_scheduled_post.delay(
+                author_id, title, contend, tags, images_data
+            )
+            return validated_data
         images_data = validated_data.pop("upload_images", [])
         tags = validated_data.pop("tags", [])
         post = Post.objects.create(**validated_data)
@@ -74,7 +88,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "contend",
             "tags",
             "comments",
-            "created_at"
+            "created_at",
         )
 
 
@@ -119,4 +133,3 @@ class PostProfileListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ("id", "title", "images", "created_at")
-

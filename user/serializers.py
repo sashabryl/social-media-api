@@ -5,7 +5,10 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
 from django.core import exceptions
 
-from social_media.serializers import PostListSerializer, PostProfileListSerializer
+from social_media.serializers import (
+    PostListSerializer,
+    PostProfileListSerializer,
+)
 from user.models import Follow
 
 
