@@ -55,6 +55,7 @@ class UserSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 "Passwords do not match. Make sure you enter the same passwords"
             )
+        data.pop("password_confirm")
         return super().validate(data)
 
     def create(self, validated_data):
